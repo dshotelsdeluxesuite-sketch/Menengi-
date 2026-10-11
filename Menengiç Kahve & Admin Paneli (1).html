@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menengiç Special - Kahve Menüsü & Admin Paneli</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter & Playfair Display -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        coffee: {
+                            50: '#fdfbf7',
+                            100: '#f7f1e5',
+                            200: '#ebd9c1',
+                            300: '#dbba96',
+                            400: '#c59768',
+                            500: '#b17b44',
+                            600: '#965e34',
+                            700: '#7a472a',
+                            800: '#643a26',
+                            900: '#523022',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .modal-animate {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-coffee-50 text-stone-800 font-sans min-h-screen flex flex-col selection:bg-coffee-300 selection:text-coffee-900">
+
+    <header class="sticky top-0 z-30 bg-coffee-900/95 backdrop-blur-md text-amber-50 shadow-md transition-all border-b border-coffee-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('menu')">
+                <div class="w-10 h-10 rounded-full bg-coffee-600 flex items-center justify-center text-amber-200 text-xl shadow-inner">
+                    <i class="fa-solid font-bold fa-mug-hot"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-serif font-bold tracking-wide text-amber-100">MENENGİÇ Special</h1>
+                    <p class="text-xs text-coffee-300 font-light">Özel Lezzetler & Tarifler</p>
+                </div>
+            </div>
+            
+            <!-- Admin Giriş / Panel Butonu -->
+            <button id="adminNavBtn" onclick="openAdminAuth()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-coffee-800/80 hover:bg-coffee-700 text-amber-200 border border-coffee-600/50 transition-all flex items-center gap-2 hover:shadow-lg active:scale-95">
+                <i class="fa-solid fa-user-gear"></i>
+                <span id="adminBtnText">Admin Paneli</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 sm:px-6 py-8">
+
+        <!-- MENÜ EKRANI (Varsayılan Görünüm - Sadece Ürünler) -->
+        <section id="menuSection" class="space-y-6">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <span class="text-xs font-bold uppercase tracking-widest text-coffee-600 bg-coffee-100 px-3 py-1 rounded-full border border-coffee-200">Gurme Menü</span>
+                <h2 class="text-3xl sm:text-4xl font-serif font-bold text-coffee-900 mt-3 mb-2">Menengiç İmzalı İçeceklerimiz</h2>
+                <p class="text-stone-600 text-sm sm:text-base">Geleneksel menengiç lezzetinin modern kahve kültürüyle eşsiz buluşması.</p>
+            </div>
+
+            <!-- Ürün Filtre / Arama -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+                <div class="relative w-full sm:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"></i>
+                    <input type="text" id="searchInput" oninput="filterProducts()" placeholder="Ürün ara..." class="w-full pl-9 pr-4 py-2 bg-white border border-coffee-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-coffee-500 shadow-sm">
+                </div>
+                <div class="text-xs text-stone-500 font-medium self-end sm:self-center">
+                    Toplam <span id="productCount" class="font-bold text-coffee-700">0</span> çeşit lezzet
+                </div>
+            </div>
+
+            <!-- Ürün Kartları Izgarası -->
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Ürünler JS ile buraya dinamik dolacak -->
+            </div>
+        </section>
+
+        <!-- ADMIN PANELİ EKRANI (Şifre Onaylandıktan Sonra Açılır) -->
+        <section id="adminSection" class="hidden space-y-6">
+            <div class="bg-coffee-900 text-amber-50 p-6 rounded-2xl shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                        <h2 class="text-2xl font-serif font-bold text-amber-100">Yönetim Paneli & Tarif Rehberi</h2>
+                    </div>
+                    <p class="text-coffee-300 text-xs sm:text-sm mt-1">Ürünlerin üzerlerine tıklayarak yapılış tariflerini ve detaylarını inceleyebilirsiniz.</p>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openAddModal()" class="flex-1 sm:flex-initial px-4 py-2.5 bg-coffee-600 hover:bg-coffee-500 text-white rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition shadow-md">
+                        <i class="fa-solid fa-plus"></i> Yeni Ürün Ekle
+                    </button>
+                    <button onclick="logoutAdmin()" class="px-4 py-2.5 bg-red-900/40 hover:bg-red-900/80 text-red-200 rounded-xl font-medium text-sm border border-red-700/50 transition">
+                        <i class="fa-solid fa-right-from-bracket"></i> Çıkış
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Ürün Listesi (Tarif Erişimli) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-coffee-200 overflow-hidden">
+                <div class="p-4 bg-coffee-100/50 border-b border-coffee-200 font-semibold text-coffee-800 text-sm flex justify-between items-center">
+                    <span>Tüm Ürünler ve Tarif Erişimi</span>
+                    <span class="text-xs text-stone-500 font-normal">Tarifi görmek için karta tıklayın</span>
+                </div>
+                <div id="adminProductList" class="divide-y divide-stone-100">
+                    <!-- Admin ürün satırları JS ile oluşturulacak -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    
+    <!-- ADMIN ŞİFRE MODALI -->
+    <div id="authModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl modal-animate border border-coffee-200 relative">
+            <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-14 h-14 bg-coffee-100 text-coffee-700 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="text-xl font-bold text-coffee-900">Admin Girişi</h3>
+                <p class="text-xs text-stone-500 mt-1">Yönetim paneli ve tariflere erişmek için şifrenizi girin.</p>
+            </div>
+            <form onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase tracking-wider mb-1">Şifre</label>
+                    <input type="password" id="adminPasswordInput" placeholder="••••••" class="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-coffee-500 focus:bg-white outline-none transition text-center tracking-widest text-lg font-bold" required>
+                </div>
+                <p id="authError" class="text-xs text-red-500 font-medium text-center hidden">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i> Hatalı şifre! (Varsayılan: 123456)
+                </p>
+                <button type="submit" class="w-full py-3 bg-coffee-700 hover:bg-coffee-800 text-white font-semibold rounded-xl transition shadow-lg shadow-coffee-700/20 active:scale-98">
+                    Giriş Yap
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TARİF GÖSTERİM MODALI (Admin Özel) -->
+    <div id="recipeModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl modal-animate border border-coffee-200 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="closeRecipeModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div id="recipeModalContent">
+                <!-- JS Dinamik Dolduracak -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ÜRÜN EKLE / DÜZENLE MODALI -->
+    <div id="productFormModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl modal-animate border border-coffee-200 max-h-[90vh] overflow-y-auto relative">
+            <button onclick="closeProductFormModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <h3 id="formModalTitle" class="text-xl font-bold text-coffee-900 mb-4">Yeni Ürün Ekle</h3>
+            
+            <form id="productForm" onsubmit="saveProduct(event)" class="space-y-4">
+                <input type="hidden" id="editProductId">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Ürün Adı</label>
+                    <input type="text" id="formTitle" required placeholder="Örn: Menengiç Cappuccino" class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Fiyat (TL)</label>
+                        <input type="number" id="formPrice" step="0.5" required placeholder="85" class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Simge (FontAwesome)</label>
+                        <input type="text" id="formIcon" placeholder="fa-mug-hot" class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Görsel URL (Opsiyonel)</label>
+                    <input type="url" id="formImage" placeholder="https://..." class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Kısa Açıklama (Müşteri için)</label>
+                    <textarea id="formDescription" rows="2" required placeholder="Ürünün menüde gözükecek kısa özeti..." class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Malzemeler (Virgülle ayırın)</label>
+                    <input type="text" id="formIngredients" placeholder="1 ölçek menengiç macunu, 150ml süt, espresso..." class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 uppercase mb-1">Hazırlanışı / Tarif (Admin için)</label>
+                    <textarea id="formRecipe" rows="4" required placeholder="Adım adım nasıl hazırlanacağını yazın..." class="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:ring-2 focus:ring-coffee-500 outline-none"></textarea>
+                </div>
+                
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" onclick="closeProductFormModal()" class="px-4 py-2 text-sm font-medium text-stone-600 bg-stone-100 rounded-lg hover:bg-stone-200 transition">İptal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-coffee-700 rounded-lg hover:bg-coffee-800 transition">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Varsayılan Menengiç Kahve Ürün Verileri
+        const initialProducts = [
+            {
+                id: '1',
+                title: 'Menengiç Latte',
+                price: 90,
+                icon: 'fa-mug-saucer',
+                image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=600&q=80',
+                description: 'Doğal çitlembik özü, kremsi buharla ısıtılmış süt ve yumuşak espresso uyumu.',
+                ingredients: '1 yemek kaşığı Menengiç Macunu, 180ml Yağlı Süt, 1 shot Espresso, Hafif Tarçın',
+                recipe: '1. Cezvede veya pitcheda menengiç macununu az miktarda ılık süt ile pürüzsüz olana kadar çırpın.\n2. Kalan sütü ekleyip buhar çubuğu ile kadifemsi mikro köpük kıvamına getirin.\n3. Bardağa hazırlanan espressoyu dökün.\n4. Üzerine menengiçli sütü latte art tekniğiyle yavaşça ekleyin ve servis edin.'
+            },
+            {
+                id: '2',
+                title: 'MenengiçChino (Menengiç Cappuccino)',
+                price: 85,
+                icon: 'fa-cloud',
+                image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=600&q=80',
+                description: 'Yoğun menengiç aroması, double shot espresso ve zengin yoğun süt köpüğü.',
+                ingredients: '1.5 tatlı kaşığı Menengiç, 120ml Süt, 2 shot Espresso, Kakao tozu',
+                recipe: '1. Double shot espressoyu bardağa alın.\n2. Menengiç macununu süt ile karıştırıp yüksek köpük yoğunluğunda ısıtın.\n3. Kahvenin üzerine köpüklü sütü aktarın, üst tabakaya bol köpük oturtun.\n4. Üzerine kakao ve taze çekilmiş menengiç tozu serpiştirin.'
+            },
+            {
+                id: '3',
+                title: 'Geleneksel Sütlü Menengiç',
+                price: 75,
+                icon: 'fa-fire-burner',
+                image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+                description: 'Ocakta kısık ateşte geleneksel yöntemlerle pişirilen kafeinsiz şifa kaynağı.',
+                ingredients: '1 tatlı kaşığı Dolu Menengiç Macunu, 1 fincan Tam Yağlı Süt, Esmer Şeker (İsteğe bağlı)',
+                recipe: '1. Bakır cezveye tam yağlı soğuk sütü ve menengiç macununu ekleyin.\n2. Kısık ateşte macun tamamen çözünene kadar sürekli karıştırın.\n3. Kaynama noktasına gelip kabarırken ateşten alın.\n4. Fincana döküp 1 dakika dinlendirerek telvesinin çökmesini bekleyin.'
+            },
+            {
+                id: '4',
+                title: 'Menengiç Mocha',
+                price: 95,
+                icon: 'fa-whiskey-glass',
+                image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?auto=format&fit=crop&w=600&q=80',
+                description: 'Bitter çikolata sosu, menengiç ezmesi ve espresso birleşimiyle tatlı gurme deneyim.',
+                ingredients: '1 tatlı kaşığı Menengiç, 20ml Bitter Çikolata Sosu, 1 shot Espresso, Isıtılmış Süt, Kremşanti',
+                recipe: '1. Bardağın tabanına çikolata sosunu ve menengiç macununu koyup sıcak espresso ile karıştırarak eritin.\n2. Isıtılmış sütü bardağa ilave edin.\n3. Üzerini çırpılmış krema ve çikolata gezdirerek süsleyin.'
+            },
+            {
+                id: '5',
+                title: 'Buzlu Menengiç Latte (Iced Menengiç)',
+                price: 95,
+                icon: 'fa-snowflake',
+                image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=600&q=80',
+                description: 'Sıcak yaz günleri için ferahlatıcı, buzlu ve sütlü özel menengiç harmanı.',
+                ingredients: '1 tatlı kaşığı Menengiç, 30ml Sıcak Su (çözmek için), 150ml Soğuk Süt, Bol Buz, Espresso shot',
+                recipe: '1. Menengiç macununu az miktarda sıcak su ile çırparak pürüzsüz sıvı hale getirin.\n2. Bardağı bol buz ile doldurun.\n3. Soğuk sütü buza ekleyin.\n4. Hazırladığınız menengiç karışımını ve üzerine isteğe bağlı espressoyu döküp pipetle servis edin.'
+            }
+        ];
+
+        // Durum Yönetimi
+        let products = [];
+        let isAdminLoggedIn = false;
+        const ADMIN_PASS = '123456';
+
+        // Uygulama Başlatma
+        window.onload = function() {
+            loadProducts();
+            renderMenuList();
+        };
+
+        // LocalStorage İşlemleri
+        function loadProducts() {
+            const stored = localStorage.getItem('menengic_products');
+            if (stored) {
+                try {
+                    products = JSON.parse(stored);
+                } catch(e) {
+                    products = [...initialProducts];
+                }
+            } else {
+                products = [...initialProducts];
+                saveProductsToStorage();
+            }
+        }
+
+        function saveProductsToStorage() {
+            localStorage.setItem('menengic_products', JSON.stringify(products));
+        }
+
+        // --- MENÜ GÖRÜNÜMÜ (MÜŞTERİ) ---
+        function renderMenuList(items = products) {
+            const grid = document.getElementById('productGrid');
+            const countEl = document.getElementById('productCount');
+            countEl.textContent = items.length;
+
+            if (items.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-stone-400">
+                        <i class="fa-solid fa-mug-empty text-4xl mb-2"></i>
+                        <p class="text-sm">Aranan kriterlere uygun ürün bulunamadı.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = items.map(p => `
+                <div class="glass-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between border border-coffee-100 group">
+                    <div>
+                        <div class="relative h-48 w-full overflow-hidden bg-stone-100">
+                            <img src="${p.image || 'https://placehold.co/600x400/643a26/FFF?text=Menengiç'}" 
+                                 alt="${p.title}" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 onerror="this.src='https://placehold.co/600x400/643a26/FFF?text=Menengiç+Special'">
+                            <div class="absolute top-3 right-3 bg-coffee-900/80 backdrop-blur-md text-amber-200 font-bold text-sm px-3 py-1 rounded-full border border-coffee-700/50">
+                                ₺${p.price}
+                            </div>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fa-solid ${p.icon || 'fa-mug-hot'} text-coffee-600"></i>
+                                <h3 class="font-serif font-bold text-lg text-coffee-900 group-hover:text-coffee-600 transition">${p.title}</h3>
+                            </div>
+                            <p class="text-stone-600 text-xs sm:text-sm line-clamp-3 leading-relaxed">${p.description}</p>
+                        </div>
+                    </div>
+                    <div class="px-5 pb-5 pt-0">
+                        <div class="w-full pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
+                            <span><i class="fa-solid fa-seedling text-emerald-600 mr-1"></i>Doğal & Gurme</span>
+                            <span class="text-coffee-700 font-medium">Özel Tarif</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtered = products.filter(p => 
+                p.title.toLowerCase().includes(query) || 
+                p.description.toLowerCase().includes(query)
+            );
+            renderMenuList(filtered);
+        }
+
+        // --- ADMIN PANELİ & TARİFLER ---
+        function openAdminAuth() {
+            if (isAdminLoggedIn) {
+                switchTab('admin');
+            } else {
+                document.getElementById('authModal').classList.remove('hidden');
+                document.getElementById('adminPasswordInput').focus();
+            }
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('authError').classList.add('hidden');
+            document.getElementById('adminPasswordInput').value = '';
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const pass = document.getElementById('adminPasswordInput').value;
+            if (pass === ADMIN_PASS) {
+                isAdminLoggedIn = true;
+                closeAuthModal();
+                updateNavState();
+                switchTab('admin');
+                renderAdminList();
+            } else {
+                document.getElementById('authError').classList.remove('hidden');
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminLoggedIn = false;
+            updateNavState();
+            switchTab('menu');
+        }
+
+        function updateNavState() {
+            const btnText = document.getElementById('adminBtnText');
+            if (isAdminLoggedIn) {
+                btnText.textContent = 'Admin Paneli (Açık)';
+            } else {
+                btnText.textContent = 'Admin Paneli';
+            }
+        }
+
+        function switchTab(tab) {
+            const menuSec = document.getElementById('menuSection');
+            const adminSec = document.getElementById('adminSection');
+
+            if (tab === 'admin') {
+                if (!isAdminLoggedIn) {
+                    openAdminAuth();
+                    return;
+                }
+                menuSec.classList.add('hidden');
+                adminSec.classList.remove('hidden');
+                renderAdminList();
+            } else {
+                menuSec.classList.remove('hidden');
+                adminSec.classList.add('hidden');
+                renderMenuList();
+            }
+        }
+
+        function renderAdminList() {
+            const container = document.getElementById('adminProductList');
+            if (products.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-stone-400">Henüz hiç ürün eklenmemiş.</div>`;
+                return;
+            }
+
+            container.innerHTML = products.map(p => `
+                <div onclick="showRecipe('${p.id}')" class="p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-coffee-50/80 transition cursor-pointer group">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-coffee-100 text-coffee-800 flex items-center justify-center font-bold text-xl shrink-0 group-hover:bg-coffee-600 group-hover:text-white transition">
+                            <i class="fa-solid ${p.icon || 'fa-mug-hot'}"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-serif font-bold text-base text-coffee-900 group-hover:text-coffee-600 transition">${p.title}</h4>
+                                <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">₺${p.price}</span>
+                            </div>
+                            <p class="text-xs text-stone-500 mt-1 line-clamp-1"><i class="fa-solid fa-utensils mr-1"></i> Tarifi Görün (Tıklayın)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-2 self-end sm:self-center" onclick="event.stopPropagation()">
+                        <button onclick="showRecipe('${p.id}')" class="px-3 py-1.5 bg-coffee-100 hover:bg-coffee-200 text-coffee-800 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                            <i class="fa-solid fa-book-open"></i> Tarif
+                        </button>
+                        <button onclick="editProduct('${p.id}')" class="p-2 text-stone-400 hover:text-coffee-700 hover:bg-stone-100 rounded-lg transition">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteProduct('${p.id}')" class="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- TARİF GÖSTERİMİ MODALI ---
+        function showRecipe(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            const modalContent = document.getElementById('recipeModalContent');
+            modalContent.innerHTML = `
+                <div class="flex items-center gap-3 border-b border-stone-100 pb-4 mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-coffee-800 text-amber-200 flex items-center justify-center text-xl">
+                        <i class="fa-solid ${product.icon || 'fa-mug-hot'}"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-coffee-600">Hazırlama Tarifi</span>
+                        <h3 class="text-xl font-serif font-bold text-coffee-900">${product.title}</h3>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-stone-400 tracking-wider mb-1"><i class="fa-solid fa-list-check mr-1"></i> Malzemeler</h4>
+                        <div class="p-3 bg-stone-50 rounded-xl text-xs sm:text-sm text-stone-700 font-medium leading-relaxed border border-stone-200/60">
+                            ${product.ingredients ? product.ingredients.split(',').map(i => `<span class="inline-block bg-white px-2 py-1 rounded shadow-sm mr-1 mb-1 border border-stone-100">• ${i.trim()}</span>`).join('') : 'Belirtilmedi'}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-stone-400 tracking-wider mb-1"><i class="fa-solid fa-fire-flame-curved mr-1"></i> Adım Adım Yapılışı</h4>
+                        <div class="p-4 bg-coffee-50/50 rounded-xl text-xs sm:text-sm text-coffee-900 whitespace-pre-line leading-relaxed border border-coffee-100">
+                            ${product.recipe || 'Henüz tarif eklenmemiş.'}
+                        </div>
+                    </div>
+
+                    <div class="pt-2 text-xs text-stone-400 italic text-center">
+                        * Bu tarif sadece yetkili personel/admin erişimine açıktır.
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('recipeModal').classList.remove('hidden');
+        }
+
+        function closeRecipeModal() {
+            document.getElementById('recipeModal').classList.add('hidden');
+        }
+
+        // --- ÜRÜN EKLE / DÜZENLE / SİL ---
+        function openAddModal() {
+            document.getElementById('editProductId').value = '';
+            document.getElementById('productForm').reset();
+            document.getElementById('formModalTitle').textContent = 'Yeni Ürün Ekle';
+            document.getElementById('productFormModal').classList.remove('hidden');
+        }
+
+        function closeProductFormModal() {
+            document.getElementById('productFormModal').classList.add('hidden');
+        }
+
+        function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('formTitle').value = product.title;
+            document.getElementById('formPrice').value = product.price;
+            document.getElementById('formIcon').value = product.icon || 'fa-mug-hot';
+            document.getElementById('formImage').value = product.image || '';
+            document.getElementById('formDescription').value = product.description;
+            document.getElementById('formIngredients').value = product.ingredients || '';
+            document.getElementById('formRecipe').value = product.recipe || '';
+
+            document.getElementById('formModalTitle').textContent = 'Ürünü Düzenle';
+            document.getElementById('productFormModal').classList.remove('hidden');
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('editProductId').value;
+            const title = document.getElementById('formTitle').value.trim();
+            const price = parseFloat(document.getElementById('formPrice').value);
+            const icon = document.getElementById('formIcon').value.trim() || 'fa-mug-hot';
+            const image = document.getElementById('formImage').value.trim();
+            const description = document.getElementById('formDescription').value.trim();
+            const ingredients = document.getElementById('formIngredients').value.trim();
+            const recipe = document.getElementById('formRecipe').value.trim();
+
+            if (id) {
+                // Düzenle
+                const idx = products.findIndex(p => p.id === id);
+                if (idx !== -1) {
+                    products[idx] = { id, title, price, icon, image, description, ingredients, recipe };
+                }
+            } else {
+                // Yeni Ekle
+                const newProd = {
+                    id: Date.now().toString(),
+                    title, price, icon, image, description, ingredients, recipe
+                };
+                products.push(newProd);
+            }
+
+            saveProductsToStorage();
+            closeProductFormModal();
+            renderAdminList();
+            renderMenuList();
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
+                products = products.filter(p => p.id !== id);
+                saveProductsToStorage();
+                renderAdminList();
+                renderMenuList();
+            }
+        }
+    </script>
+</body>
+</html>
